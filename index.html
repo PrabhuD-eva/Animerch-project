@@ -1,0 +1,198 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Anime Merch Store - Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section position-relative overflow-hidden" style="min-height: 90vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 100px 0;">
+    <div class="container h-100">
+        <div class="row h-100 align-items-center">
+            <div class="col-lg-6 text-white">
+                <h1 class="display-3 fw-bold mb-4 animate__animated animate__fadeInDown" style="font-family: 'Press Start 2P', cursive; font-size: 2.5rem; line-height: 1.5;">
+                    Welcome to <span style="color: #ff6b6b;">AnimeMerch</span>
+                </h1>
+                <p class="lead mb-4 animate__animated animate__fadeInUp animate__delay-1s">
+                    Discover the finest collection of anime merchandise. From rare figures to exclusive apparel, we bring your favorite characters to life!
+                </p>
+                <div class="d-flex gap-3 animate__animated animate__fadeInUp animate__delay-2s">
+                    <a href="{% url 'product_list' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-store me-2"></i>Shop Now
+                    </a>
+                    <a href="#" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-fire me-2"></i>Trending
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="hero-image-wrapper text-center">
+                    <img src="https://via.placeholder.com/600x400/764ba2/ffffff?text=Anime+Merch" alt="Anime Merch" class="img-fluid rounded-3 shadow-lg" style="animation: float 3s ease-in-out infinite;">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Floating Elements -->
+    <div class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none">
+        <i class="fas fa-dragon position-absolute text-white-50" style="top: 20%; left: 10%; font-size: 3rem; animation: float 4s ease-in-out infinite;"></i>
+        <i class="fas fa-crown position-absolute text-white-50" style="bottom: 20%; right: 10%; font-size: 3rem; animation: float 5s ease-in-out infinite 1s;"></i>
+        <i class="fas fa-mask position-absolute text-white-50" style="top: 50%; left: 50%; font-size: 3rem; animation: float 4.5s ease-in-out infinite 0.5s;"></i>
+    </div>
+</section>
+
+<style>
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+    }
+    .pointer-events-none {
+        pointer-events: none;
+    }
+</style>
+
+<!-- Categories Section -->
+<section class="categories-section py-5">
+    <div class="container">
+        <h2 class="text-center mb-5 section-title" style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">Shop by Category</h2>
+        <div class="row g-4">
+            {% for category in categories|slice:":6" %}
+                <div class="col-md-4 col-lg-2">
+                    <a href="{% url 'product_list' %}?category={{ category.slug }}" class="text-decoration-none">
+                        <div class="card text-center p-4 rounded-3 shadow-lg hover-effect" style="background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); transition: all 0.3s;">
+                            <div class="category-icon mb-3">
+                                <i class="fas fa-box-open fa-3x" style="color: #667eea;"></i>
+                            </div>
+                            <h5 class="mb-0" style="color: #333;">{{ category.name }}</h5>
+                        </div>
+                    </a>
+                </div>
+            {% empty %}
+                <div class="col-12 text-center text-white">
+                    <p>No categories available. Add some in admin panel.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products -->
+<section class="featured-products py-5" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+    <div class="container">
+        <h2 class="text-center mb-5 text-white">Featured Products</h2>
+        <div class="row g-4">
+            {% for product in featured_products %}
+                <div class="col-md-3">
+                    <div class="card h-100 border-0 shadow-lg hover-effect" style="background: rgba(255,255,255,0.95); border-radius: 15px; overflow: hidden;">
+                        {% if product.is_on_sale %}
+                            <span class="badge bg-danger position-absolute top-0 end-0 m-3" style="z-index: 1;">-{{ product.discount_percent }}%</span>
+                        {% endif %}
+                        
+                        <div style="height: 250px; overflow: hidden;">
+                            {% if product.images.first %}
+                                <img src="{{ product.images.first.image.url }}" class="card-img-top" alt="{{ product.name }}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s;">
+                            {% else %}
+                                <img src="https://via.placeholder.com/300x250/667eea/ffffff?text=No+Image" class="card-img-top" alt="{{ product.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% endif %}
+                        </div>
+                        
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name|truncatechars:50 }}</h5>
+                            <p class="card-text text-muted small">{{ product.anime.name|default:"Various" }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    {% if product.is_on_sale %}
+                                        <span class="text-muted text-decoration-line-through">₹{{ product.price }}</span>
+                                        <span class="h5 text-danger ms-2">₹{{ product.discounted_price }}</span>
+                                    {% else %}
+                                        <span class="h5">₹{{ product.price }}</span>
+                                    {% endif %}
+                                </div>
+                                <button class="btn btn-primary add-to-cart" data-product-id="{{ product.id }}">
+                                    <i class="fas fa-cart-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12 text-center text-white">
+                    <p>No featured products yet. Add some in admin panel.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Special Offer -->
+<section class="offer-section py-5" style="background: linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%);">
+    <div class="container text-white text-center">
+        <h2 class="display-4 fw-bold mb-3">Limited Time Offer!</h2>
+        <p class="lead mb-4">Get up to 50% off on selected items. Use code: <span class="badge bg-light text-dark p-3">ANIME50</span></p>
+        <a href="{% url 'product_list' %}?on_sale=true" class="btn btn-light btn-lg">
+            <i class="fas fa-gift me-2"></i>Shop Sale
+        </a>
+    </div>
+</section>
+
+<!-- Latest Products -->
+<section class="latest-products py-5">
+    <div class="container">
+        <h2 class="text-center mb-5 text-white">New Arrivals</h2>
+        <div class="row g-4">
+            {% for product in latest_products|slice:":8" %}
+                <div class="col-md-3">
+                    <div class="card h-100 border-0 shadow-lg hover-effect" style="background: rgba(255,255,255,0.95); border-radius: 15px; overflow: hidden;">
+                        <span class="badge bg-success position-absolute top-0 end-0 m-3" style="z-index: 1;">New</span>
+                        
+                        <div style="height: 250px; overflow: hidden;">
+                            {% if product.images.first %}
+                                <img src="{{ product.images.first.image.url }}" class="card-img-top" alt="{{ product.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                                <img src="https://via.placeholder.com/300x250/764ba2/ffffff?text=New" class="card-img-top" alt="{{ product.name }}">
+                            {% endif %}
+                        </div>
+                        
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name|truncatechars:50 }}</h5>
+                            <p class="card-text text-muted small">{{ product.anime.name|default:"Various" }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="h5">₹{{ product.price }}</span>
+                                <button class="btn btn-primary add-to-cart" data-product-id="{{ product.id }}">
+                                    <i class="fas fa-cart-plus"></i>
+                            </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12 text-center text-white">
+                    <p>No products yet. Add some in admin panel.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<script>
+$(document).ready(function() {
+    $('.add-to-cart').click(function(e) {
+        e.preventDefault();
+        var button = $(this);
+        var productId = button.data('product-id');
+        
+        $.post('/cart/add/', {
+            product_id: productId,
+            quantity: 1,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                $('.cart-count').text(data.cart_total);
+                alert('Product added to cart!');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}{{ product.name }} - Anime Merch Store{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'product_list' %}">Products</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'product_list' %}?category={{ product.category.slug }}">{{ product.category.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ product.name }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <!-- Product Images -->
+        <div class="col-md-6">
+            <div class="card shadow-lg mb-3" style="background: rgba(255,255,255,0.95); border-radius: 15px; overflow: hidden;">
+                <div style="height: 400px; overflow: hidden;">
+                    {% with primary_image=product.images.first %}
+                        {% if primary_image %}
+                            <img src="{{ primary_image.image.url }}" class="img-fluid" alt="{{ product.name }}" id="mainProductImage" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                            <img src="https://via.placeholder.com/600x400/667eea/ffffff?text={{ product.name|urlencode }}" class="img-fluid" alt="{{ product.name }}" id="mainProductImage">
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+            
+            <!-- Thumbnail Images -->
+            {% if product.images.count > 1 %}
+                <div class="row g-2">
+                    {% for image in product.images.all %}
+                        <div class="col-3">
+                            <div class="card shadow-sm" style="cursor: pointer; border-radius: 10px; overflow: hidden;" onclick="changeMainImage('{{ image.image.url }}')">
+                                <div style="height: 80px; overflow: hidden;">
+                                    <img src="{{ image.image.url }}" class="img-fluid" alt="Thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Product Details -->
+        <div class="col-md-6">
+            <div class="card shadow-lg" style="background: rgba(255,255,255,0.95); border-radius: 15px;">
+                <div class="card-body">
+                    <h1 class="card-title mb-3">{{ product.name }}</h1>
+                    
+                    <div class="mb-3">
+                        <span class="badge bg-primary">{{ product.category.name }}</span>
+                        <span class="badge bg-info">{{ product.anime.name }}</span>
+                        {% if product.is_on_sale %}
+                            <span class="badge bg-danger">Sale {{ product.discount_percent }}% Off</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        {% if product.is_on_sale %}
+                            <span class="text-muted text-decoration-line-through h5">₹{{ product.price }}</span>
+                            <span class="h2 text-danger ms-2">₹{{ product.discounted_price }}</span>
+                            <span class="badge bg-success ms-2">Save ₹{{ product.price|add:"-"|add:product.discounted_price }}</span>
+                        {% else %}
+                            <span class="h2">₹{{ product.price }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Description</h5>
+                        <p>{{ product.description|linebreaks }}</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Availability</h5>
+                        {% if product.stock > 0 %}
+                            <span class="text-success"><i class="fas fa-check-circle"></i> In Stock ({{ product.stock }} available)</span>
+                        {% else %}
+                            <span class="text-danger"><i class="fas fa-times-circle"></i> Out of Stock</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if product.stock > 0 %}
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <button class="btn btn-outline-secondary" type="button" id="decreaseQty">-</button>
+                                    <input type="number" class="form-control text-center" id="quantity" value="1" min="1" max="{{ product.stock }}">
+                                    <button class="btn btn-outline-secondary" type="button" id="increaseQty">+</button>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <button class="btn btn-primary w-100" id="addToCartBtn" data-product-id="{{ product.id }}">
+                                    <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Related Products -->
+    {% if related_products %}
+        <div class="mt-5">
+            <h3 class="text-white mb-4">Related Products</h3>
+            <div class="row g-4">
+                {% for related in related_products %}
+                    <div class="col-md-3">
+                        <div class="card h-100 border-0 shadow-lg hover-effect" style="border-radius: 15px; overflow: hidden; background: rgba(255,255,255,0.95);">
+                            <a href="{% url 'product_detail' related.slug %}">
+                                <div style="height: 200px; overflow: hidden;">
+                                    {% if related.images.first %}
+                                        <img src="{{ related.images.first.image.url }}" class="card-img-top" alt="{{ related.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                    {% else %}
+                                        <img src="https://via.placeholder.com/300x200/667eea/ffffff?text=Product" class="card-img-top" alt="{{ related.name }}">
+                                    {% endif %}
+                                </div>
+                            </a>
+                            
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <a href="{% url 'product_detail' related.slug %}" class="text-decoration-none text-dark">
+                                        {{ related.name|truncatechars:40 }}
+                                    </a>
+                                </h6>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="h6">₹{{ related.price }}</span>
+                                    <button class="btn btn-sm btn-primary add-to-cart-related" data-product-id="{{ related.id }}">
+                                        <i class="fas fa-cart-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function changeMainImage(imageUrl) {
+    document.getElementById('mainProductImage').src = imageUrl;
+}
+
+$(document).ready(function() {
+    // Quantity controls
+    $('#decreaseQty').click(function() {
+        var qty = parseInt($('#quantity').val());
+        if (qty > 1) {
+            $('#quantity').val(qty - 1);
+        }
+    });
+    
+    $('#increaseQty').click(function() {
+        var qty = parseInt($('#quantity').val());
+        var max = parseInt($('#quantity').attr('max'));
+        if (qty < max) {
+            $('#quantity').val(qty + 1);
+        }
+    });
+    
+    // Add to cart
+    $('#addToCartBtn').click(function() {
+        var productId = $(this).data('product-id');
+        var quantity = $('#quantity').val();
+        
+        $.post('/cart/add/', {
+            product_id: productId,
+            quantity: quantity,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                $('.cart-count').text(data.cart_total);
+                alert('Product added to cart!');
+            }
+        });
+    });
+    
+    // Related products add to cart
+    $('.add-to-cart-related').click(function(e) {
+        e.preventDefault();
+        var productId = $(this).data('product-id');
+        
+        $.post('/cart/add/', {
+            product_id: productId,
+            quantity: 1,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(data) {
+            if (data.success) {
+                $('.cart-count').text(data.cart_total);
+                alert('Product added to cart!');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

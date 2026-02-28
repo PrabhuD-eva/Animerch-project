@@ -244,3 +244,7 @@ def search_suggestions(request):
         suggestions = [{'id': p.id, 'name': p.name, 'price': str(p.price)} for p in products]
         return JsonResponse({'suggestions': suggestions})
     return JsonResponse({'suggestions': []})
+
+def cart_count(request):
+    cart = get_or_create_cart(request)
+    return JsonResponse({'count': cart.items.count()})
