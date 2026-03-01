@@ -248,3 +248,7 @@ def search_suggestions(request):
 def cart_count(request):
     cart = get_or_create_cart(request)
     return JsonResponse({'count': cart.items.count()})
+
+def cart_count(request):
+    cart = get_or_create_cart(request)
+    return JsonResponse({'count': cart.items.count()})
