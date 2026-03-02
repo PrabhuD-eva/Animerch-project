@@ -1,10 +1,11 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from .models import Product, Category, Anime, Cart, CartItem, Order
-from .forms import CheckoutForm
+from .models import Product, Category, Anime, Cart, CartItem, Order, UserProfile
+from .forms import RegistrationForm, LoginForm, UserProfileForm, CheckoutForm
 import json
 from decimal import Decimal
 import uuid
@@ -252,3 +253,116 @@ def cart_count(request):
 def cart_count(request):
     cart = get_or_create_cart(request)
     return JsonResponse({'count': cart.items.count()})
+
+def register_view(request):
+    if request.user.is_authenticated:
+        return redirect('index')
+    
+    if request.method == 'POST':
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            # Create user profile
+            UserProfile.objects.create(user=user)
+            login(request, user)
+            messages.success(request, f'Welcome {user.username}! Your account has been created successfully.')
+            return redirect('index')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+    else:
+        form = RegistrationForm()
+    
+    return render(request, 'store/auth/register.html', {'form': form, 'title': 'Register'})
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('index')
+    
+    if request.method == 'POST':
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'Welcome back, {user.username}!')
+                
+                # Check if there's a next parameter
+                next_url = request.GET.get('next')
+                if next_url:
+                    return redirect(next_url)
+                return redirect('index')
+        else:
+            messages.error(request, 'Invalid username or password.')
+    else:
+        form = LoginForm()
+    
+    return render(request, 'store/auth/login.html', {'form': form, 'title': 'Login'})
+
+def logout_view(request):
+    logout(request)
+    messages.success(request, 'You have been logged out successfully.')
+    return redirect('index')
+
+@login_required
+def dashboard_view(request):
+    user = request.user
+    orders = Order.objects.filter(user=user).order_by('-created_at')[:5]
+    profile = user.profile
+    
+    context = {
+        'user': user,
+        'profile': profile,
+        'orders': orders,
+        'orders_count': Order.objects.filter(user=user).count(),
+        'total_spent': sum(order.final_amount for order in Order.objects.filter(user=user))
+    }
+    return render(request, 'store/user/dashboard.html', context)
+
+@login_required
+def profile_view(request):
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            
+            # Update profile fields
+            profile = request.user.profile
+            profile.phone = request.POST.get('phone', '')
+            profile.address = request.POST.get('address', '')
+            profile.city = request.POST.get('city', '')
+            profile.state = request.POST.get('state', '')
+            profile.zip_code = request.POST.get('zip_code', '')
+            profile.country = request.POST.get('country', '')
+            profile.newsletter_subscribed = request.POST.get('newsletter', False) == 'on'
+            
+            if 'profile_picture' in request.FILES:
+                profile.profile_picture = request.FILES['profile_picture']
+            
+            profile.save()
+            
+            messages.success(request, 'Your profile has been updated successfully.')
+            return redirect('profile')
+    else:
+        form = UserProfileForm(instance=request.user)
+    
+    context = {
+        'form': form,
+        'profile': request.user.profile
+    }
+    return render(request, 'store/user/profile.html', context)
+
+@login_required
+def order_history_view(request):
+    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    context = {'orders': orders}
+    return render(request, 'store/user/orders.html', context)
+
+@login_required
+def order_detail_view(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    context = {'order': order}
+    return render(request, 'store/user/order_detail.html', context)

@@ -159,22 +159,35 @@
                 </a>
                 
                 <!-- User Menu -->
-                <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        {% if user.is_authenticated %}
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-user-circle me-2"></i>{{ user.username }}</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-history me-2"></i>Orders</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                        {% else %}
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-sign-in-alt me-2"></i>Login</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-user-plus me-2"></i>Register</a></li>
-                        {% endif %}
-                    </ul>
-                </div>
+<div class="dropdown">
+    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <i class="fas fa-user"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+        {% if user.is_authenticated %}
+            <li><a class="dropdown-item" href="{% url 'dashboard' %}">
+                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+            </a></li>
+            <li><a class="dropdown-item" href="{% url 'profile' %}">
+                <i class="fas fa-user-edit me-2"></i>Profile
+            </a></li>
+            <li><a class="dropdown-item" href="{% url 'orders' %}">
+                <i class="fas fa-shopping-bag me-2"></i>My Orders
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                <i class="fas fa-sign-out-alt me-2"></i>Logout
+            </a></li>
+        {% else %}
+            <li><a class="dropdown-item" href="{% url 'login' %}">
+                <i class="fas fa-sign-in-alt me-2"></i>Login
+            </a></li>
+            <li><a class="dropdown-item" href="{% url 'register' %}">
+                <i class="fas fa-user-plus me-2"></i>Register
+            </a></li>
+        {% endif %}
+    </ul>
+</div>
             </div>
         </div>
     </nav>
@@ -313,5 +326,15 @@
     </script>
     
     {% block extra_js %}{% endblock %}
+<script>
+// Logout confirmation
+document.querySelectorAll('a[href="{% url 'logout' %}"]').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+        if (!confirm('Are you sure you want to logout?')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
 </body>
 </html>

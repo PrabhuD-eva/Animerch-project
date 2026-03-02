@@ -1,0 +1,169 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Anime Merch Store{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="card shadow-lg mb-4" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-circle me-2"></i>{{ user.username }}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'dashboard' %}" class="list-group-item list-group-item-action active">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                        <a href="{% url 'profile' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-user-edit me-2"></i>Profile
+                        </a>
+                        <a href="{% url 'orders' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-shopping-bag me-2"></i>Orders
+                            <span class="badge bg-primary float-end">{{ orders_count }}</span>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <i class="fas fa-heart me-2"></i>Wishlist
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <i class="fas fa-cog me-2"></i>Settings
+                        </a>
+                        <a href="{% url 'logout' %}" class="list-group-item list-group-item-action text-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Profile Summary -->
+            <div class="card shadow-lg" style="border-radius: 15px;">
+                <div class="card-body text-center">
+                    {% if profile.profile_picture %}
+                        <img src="{{ profile.profile_picture.url }}" class="rounded-circle mb-3" style="width: 100px; height: 100px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 100px; height: 100px;">
+                            <i class="fas fa-user fa-3x text-white"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <h5>{{ user.get_full_name|default:user.username }}</h5>
+                    <p class="text-muted mb-2">{{ user.email }}</p>
+                    
+                    {% if profile.phone %}
+                        <p class="mb-1"><i class="fas fa-phone me-2"></i>{{ profile.phone }}</p>
+                    {% endif %}
+                    
+                    {% if profile.get_full_address %}
+                        <p class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>{{ profile.get_full_address }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <!-- Stats Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="card shadow-lg text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+                        <div class="card-body">
+                            <i class="fas fa-shopping-bag fa-3x mb-3"></i>
+                            <h3>{{ orders_count }}</h3>
+                            <p class="mb-0">Total Orders</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card shadow-lg text-center" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none;">
+                        <div class="card-body">
+                            <i class="fas fa-rupee-sign fa-3x mb-3"></i>
+                            <h3>₹{{ total_spent|floatformat:0 }}</h3>
+                            <p class="mb-0">Total Spent</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card shadow-lg text-center" style="background: linear-gradient(135deg, #5f2c82 0%, #49a09d 100%); color: white; border: none;">
+                        <div class="card-body">
+                            <i class="fas fa-heart fa-3x mb-3"></i>
+                            <h3>0</h3>
+                            <p class="mb-0">Wishlist Items</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Orders -->
+            <div class="card shadow-lg" style="border-radius: 15px;">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-history me-2"></i>Recent Orders
+                        </h5>
+                        <a href="{% url 'orders' %}" class="btn btn-sm btn-primary">View All</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Date</th>
+                                        <th>Items</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orders %}
+                                        <tr>
+                                            <td><strong>{{ order.order_number }}</strong></td>
+                                            <td>{{ order.created_at|date:"M d, Y" }}</td>
+                                            <td>{{ order.cart.items.count }}</td>
+                                            <td>₹{{ order.final_amount }}</td>
+                                            <td>
+                                                {% if order.status == 'delivered' %}
+                                                    <span class="badge bg-success">{{ order.status|title }}</span>
+                                                {% elif order.status == 'cancelled' %}
+                                                    <span class="badge bg-danger">{{ order.status|title }}</span>
+                                                {% elif order.status == 'shipped' %}
+                                                    <span class="badge bg-info">{{ order.status|title }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">{{ order.status|title }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-shopping-bag fa-4x text-muted mb-3"></i>
+                            <h5>No orders yet</h5>
+                            <p class="text-muted">Start shopping to see your orders here!</p>
+                            <a href="{% url 'product_list' %}" class="btn btn-primary">
+                                <i class="fas fa-store me-2"></i>Browse Products
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
