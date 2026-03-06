@@ -2,67 +2,56 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
-from .models import Product, Category, Anime, Cart, CartItem, Order, UserProfile
-from .forms import RegistrationForm, LoginForm, UserProfileForm, CheckoutForm
-import json
-from decimal import Decimal
+from .models import Product, Category, Cart, CartItem, Order, OrderItem, ContactMessage, UserProfile
+from django.contrib.auth.models import User
 import uuid
+import json
+
+# ================ HELPER FUNCTIONS ================
 
 def get_or_create_cart(request):
+    """Get existing cart or create a new one"""
     if request.user.is_authenticated:
         cart, created = Cart.objects.get_or_create(user=request.user)
     else:
-        session_id = request.session.get('cart_session_id')
+        session_id = request.session.get('cart_id')
         if not session_id:
             session_id = str(uuid.uuid4())
-            request.session['cart_session_id'] = session_id
-        cart, created = Cart.objects.get_or_create(session_id=session_id, user=None)
+            request.session['cart_id'] = session_id
+        cart, created = Cart.objects.get_or_create(session_id=session_id)
     return cart
 
+# ================ PUBLIC PAGES ================
+
 def index(request):
+    """Home page"""
     featured_products = Product.objects.filter(featured=True)[:8]
+    latest_products = Product.objects.order_by('-created_at')[:8]
     categories = Category.objects.all()
-    anime_list = Anime.objects.all()
-    latest_products = Product.objects.order_by('-created_at')[:12]
     
     context = {
         'featured_products': featured_products,
-        'categories': categories,
-        'anime_list': anime_list,
         'latest_products': latest_products,
+        'categories': categories,
     }
     return render(request, 'store/index.html', context)
 
 def product_list(request):
+    """Product listing page"""
     products = Product.objects.all()
     categories = Category.objects.all()
-    anime_list = Anime.objects.all()
     
     # Filter by category
-    category_slug = request.GET.get('category')
-    if category_slug:
-        products = products.filter(category__slug=category_slug)
-    
-    # Filter by anime
-    anime_slug = request.GET.get('anime')
-    if anime_slug:
-        products = products.filter(anime__slug=anime_slug)
-    
-    # Filter by product type
-    product_type = request.GET.get('type')
-    if product_type:
-        products = products.filter(product_type=product_type)
-    
-    # Filter by sale
-    if request.GET.get('on_sale') == 'true':
-        products = products.filter(discount_percent__gt=0)
+    category = request.GET.get('category')
+    if category:
+        products = products.filter(category=category)
     
     # Search
-    search_query = request.GET.get('search')
-    if search_query:
-        products = products.filter(name__icontains=search_query) | products.filter(description__icontains=search_query)
+    search = request.GET.get('search')
+    if search:
+        products = products.filter(name__icontains=search)
     
     # Sort
     sort = request.GET.get('sort', 'name')
@@ -72,24 +61,21 @@ def product_list(request):
         products = products.order_by('-price')
     elif sort == 'newest':
         products = products.order_by('-created_at')
-    elif sort == 'popular':
-        products = products.order_by('-id')  # Placeholder for popularity
     else:
         products = products.order_by('name')
     
     context = {
         'products': products,
         'categories': categories,
-        'anime_list': anime_list,
-        'current_category': category_slug,
-        'current_anime': anime_slug,
+        'current_category': category,
         'current_sort': sort,
     }
-    return render(request, 'store/product_list.html', context)
+    return render(request, 'store/products.html', context)
 
-def product_detail(request, slug):
-    product = get_object_or_404(Product, slug=slug)
-    related_products = Product.objects.filter(anime=product.anime).exclude(id=product.id)[:4]
+def product_detail(request, id):
+    """Product detail page"""
+    product = get_object_or_404(Product, id=id)
+    related_products = Product.objects.filter(category=product.category).exclude(id=id)[:4]
     
     context = {
         'product': product,
@@ -97,272 +83,300 @@ def product_detail(request, slug):
     }
     return render(request, 'store/product_detail.html', context)
 
-@require_POST
-def add_to_cart(request):
-    product_id = request.POST.get('product_id')
-    quantity = int(request.POST.get('quantity', 1))
-    
-    try:
-        product = Product.objects.get(id=product_id)
-        cart = get_or_create_cart(request)
-        
-        cart_item, created = CartItem.objects.get_or_create(
-            cart=cart,
-            product=product,
-            defaults={'quantity': 0}
-        )
-        cart_item.quantity += quantity
-        cart_item.save()
-        
-        messages.success(request, f'{product.name} added to cart!')
-        
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': True,
-                'cart_total': cart.items.count(),
-                'cart_total_price': str(cart.total_with_discount)
-            })
-        return redirect('cart_detail')
-        
-    except Product.DoesNotExist:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': False, 'error': 'Product not found'})
-        messages.error(request, 'Product not found')
-        return redirect('product_list')
+def about(request):
+    """About Us page"""
+    return render(request, 'store/about.html')
 
-def cart_detail(request):
+def contact(request):
+    """Contact Us page"""
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        message = request.POST.get('message')
+        
+        # Save to database
+        ContactMessage.objects.create(
+            name=name,
+            email=email,
+            message=message
+        )
+        
+        messages.success(request, 'Thank you for contacting us! We will reply soon.')
+        return redirect('contact')
+    
+    return render(request, 'store/contact.html')
+
+# ================ CART OPERATIONS ================
+
+def cart_view(request):
+    """View cart"""
     cart = get_or_create_cart(request)
+    cart_items = CartItem.objects.filter(cart=cart).select_related('product')
+    total = cart.get_total()
+    
     context = {
-        'cart': cart,
-        'cart_items': cart.items.all().select_related('product')
+        'cart_items': cart_items,
+        'total': total,
     }
     return render(request, 'store/cart.html', context)
 
-@require_POST
-def update_cart_item(request):
-    item_id = request.POST.get('item_id')
-    quantity = int(request.POST.get('quantity', 1))
+def add_to_cart(request, product_id):
+    """Add item to cart"""
+    product = get_object_or_404(Product, id=product_id)
     
-    try:
-        cart_item = CartItem.objects.get(id=item_id)
-        if quantity > 0:
-            cart_item.quantity = quantity
-            cart_item.save()
-        else:
-            cart_item.delete()
-        
-        cart = cart_item.cart
-        
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'success': True,
-                'item_subtotal': str(cart_item.subtotal_with_discount),
-                'cart_total': str(cart.total_with_discount),
-                'item_count': cart.items.count()
-            })
-        return redirect('cart_detail')
-        
-    except CartItem.DoesNotExist:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': False, 'error': 'Item not found'})
-        return redirect('cart_detail')
+    # Check stock
+    if product.stock <= 0:
+        messages.error(request, 'Sorry, this product is out of stock!')
+        return redirect('product_detail', id=product_id)
+    
+    cart = get_or_create_cart(request)
+    
+    # Check if item already in cart
+    cart_item, created = CartItem.objects.get_or_create(
+        cart=cart,
+        product=product,
+        defaults={'quantity': 0}
+    )
+    
+    # Update quantity
+    if cart_item.quantity + 1 > product.stock:
+        messages.error(request, f'Sorry, only {product.stock} items available!')
+        return redirect('cart')
+    
+    cart_item.quantity += 1
+    cart_item.save()
+    
+    messages.success(request, f'{product.name} added to cart!')
+    
+    # For AJAX requests
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'cart_count': CartItem.objects.filter(cart=cart).count(),
+            'message': f'{product.name} added to cart!'
+        })
+    
+    return redirect('cart')
 
-@require_POST
-def remove_from_cart(request):
-    item_id = request.POST.get('item_id')
+def update_cart(request, item_id):
+    """Update cart item quantity"""
+    cart_item = get_object_or_404(CartItem, id=item_id)
     
-    try:
-        cart_item = CartItem.objects.get(id=item_id)
-        cart_item.delete()
-        messages.success(request, 'Item removed from cart')
+    if request.method == 'POST':
+        quantity = int(request.POST.get('quantity', 1))
         
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            cart = get_or_create_cart(request)
-            return JsonResponse({
-                'success': True,
-                'cart_total': str(cart.total_with_discount),
-                'item_count': cart.items.count()
-            })
-        return redirect('cart_detail')
-        
-    except CartItem.DoesNotExist:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': False, 'error': 'Item not found'})
-        return redirect('cart_detail')
+        if quantity > 0:
+            # Check stock
+            if quantity > cart_item.product.stock:
+                messages.error(request, f'Sorry, only {cart_item.product.stock} items available!')
+            else:
+                cart_item.quantity = quantity
+                cart_item.save()
+                messages.success(request, 'Cart updated!')
+        else:
+            # Remove if quantity is 0
+            cart_item.delete()
+            messages.success(request, 'Item removed from cart!')
+    
+    return redirect('cart')
+
+def remove_from_cart(request, item_id):
+    """Remove item from cart"""
+    cart_item = get_object_or_404(CartItem, id=item_id)
+    product_name = cart_item.product.name
+    cart_item.delete()
+    messages.success(request, f'{product_name} removed from cart!')
+    return redirect('cart')
+
+def cart_count(request):
+    """Get cart count for AJAX"""
+    cart = get_or_create_cart(request)
+    count = CartItem.objects.filter(cart=cart).count()
+    return JsonResponse({'count': count})
+
+# ================ CHECKOUT & ORDERS ================
 
 @login_required
 def checkout(request):
+    """Checkout page"""
     cart = get_or_create_cart(request)
+    cart_items = CartItem.objects.filter(cart=cart)
     
-    if cart.items.count() == 0:
-        messages.warning(request, 'Your cart is empty')
-        return redirect('product_list')
+    if not cart_items:
+        messages.warning(request, 'Your cart is empty!')
+        return redirect('products')
+    
+    total = cart.get_total()
     
     if request.method == 'POST':
-        form = CheckoutForm(request.POST)
-        if form.is_valid():
-            # Create order
-            order = Order.objects.create(
-                user=request.user,
-                cart=cart,
-                full_name=form.cleaned_data['full_name'],
-                email=form.cleaned_data['email'],
-                address=form.cleaned_data['address'],
-                city=form.cleaned_data['city'],
-                state=form.cleaned_data['state'],
-                zip_code=form.cleaned_data['zip_code'],
-                country=form.cleaned_data['country'],
-                phone=form.cleaned_data['phone'],
-                total_amount=cart.total,
-                discount_amount=cart.total_discount,
-                final_amount=cart.total_with_discount
+        # Create order
+        order = Order.objects.create(
+            user=request.user,
+            full_name=request.POST.get('full_name'),
+            email=request.POST.get('email'),
+            address=request.POST.get('address'),
+            city=request.POST.get('city'),
+            state=request.POST.get('state'),
+            zip_code=request.POST.get('zip_code'),
+            phone=request.POST.get('phone'),
+            total_amount=total,
+        )
+        
+        # Create order items and update stock
+        for item in cart_items:
+            OrderItem.objects.create(
+                order=order,
+                product=item.product,
+                quantity=item.quantity,
+                price=item.product.price
             )
             
-            # Clear cart
-            cart.items.all().delete()
-            
-            messages.success(request, 'Order placed successfully!')
-            return redirect('order_confirmation', order_id=order.id)
-    else:
-        form = CheckoutForm()
+            # Update product stock
+            product = item.product
+            product.stock -= item.quantity
+            product.save()
+        
+        # Clear cart
+        cart_items.delete()
+        
+        messages.success(request, 'Order placed successfully!')
+        return redirect('order_confirmation', order_id=order.id)
     
     context = {
-        'cart': cart,
-        'form': form
+        'cart_items': cart_items,
+        'total': total,
     }
     return render(request, 'store/checkout.html', context)
 
 @login_required
 def order_confirmation(request, order_id):
+    """Order confirmation page"""
     order = get_object_or_404(Order, id=order_id, user=request.user)
-    context = {'order': order}
-    return render(request, 'store/order_confirmation.html', context)
+    return render(request, 'store/order_confirmation.html', {'order': order})
 
-def search_suggestions(request):
-    query = request.GET.get('q', '')
-    if query:
-        products = Product.objects.filter(name__icontains=query)[:5]
-        suggestions = [{'id': p.id, 'name': p.name, 'price': str(p.price)} for p in products]
-        return JsonResponse({'suggestions': suggestions})
-    return JsonResponse({'suggestions': []})
+@login_required
+def order_history(request):
+    """Order history page"""
+    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'store/orders.html', {'orders': orders})
 
-def cart_count(request):
-    cart = get_or_create_cart(request)
-    return JsonResponse({'count': cart.items.count()})
+# ================ AUTHENTICATION ================
 
-def cart_count(request):
-    cart = get_or_create_cart(request)
-    return JsonResponse({'count': cart.items.count()})
-
-def register_view(request):
-    if request.user.is_authenticated:
+def register(request):
+    """User registration"""
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        # Validation
+        if password != confirm_password:
+            messages.error(request, 'Passwords do not match!')
+            return redirect('register')
+        
+        if User.objects.filter(username=username).exists():
+            messages.error(request, 'Username already exists!')
+            return redirect('register')
+        
+        if User.objects.filter(email=email).exists():
+            messages.error(request, 'Email already registered!')
+            return redirect('register')
+        
+        # Create user
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password
+        )
+        
+        # Transfer guest cart to user if exists
+        session_id = request.session.get('cart_id')
+        if session_id:
+            try:
+                guest_cart = Cart.objects.get(session_id=session_id)
+                guest_cart.user = user
+                guest_cart.session_id = None
+                guest_cart.save()
+            except Cart.DoesNotExist:
+                pass
+        
+        login(request, user)
+        messages.success(request, 'Registration successful!')
         return redirect('index')
     
-    if request.method == 'POST':
-        form = RegistrationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            # Create user profile
-            UserProfile.objects.create(user=user)
-            login(request, user)
-            messages.success(request, f'Welcome {user.username}! Your account has been created successfully.')
-            return redirect('index')
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field}: {error}")
-    else:
-        form = RegistrationForm()
-    
-    return render(request, 'store/auth/register.html', {'form': form, 'title': 'Register'})
+    return render(request, 'store/register.html')
 
 def login_view(request):
-    if request.user.is_authenticated:
-        return redirect('index')
-    
+    """User login"""
     if request.method == 'POST':
-        form = LoginForm(request, data=request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
-                messages.success(request, f'Welcome back, {user.username}!')
-                
-                # Check if there's a next parameter
-                next_url = request.GET.get('next')
-                if next_url:
-                    return redirect(next_url)
-                return redirect('index')
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            login(request, user)
+            
+            # Transfer guest cart to user if exists
+            session_id = request.session.get('cart_id')
+            if session_id:
+                try:
+                    guest_cart = Cart.objects.get(session_id=session_id)
+                    # Check if user already has a cart
+                    user_cart, created = Cart.objects.get_or_create(user=user)
+                    
+                    # Move items from guest cart to user cart
+                    for item in guest_cart.cartitem_set.all():
+                        user_item, created = CartItem.objects.get_or_create(
+                            cart=user_cart,
+                            product=item.product,
+                            defaults={'quantity': 0}
+                        )
+                        user_item.quantity += item.quantity
+                        user_item.save()
+                    
+                    # Delete guest cart
+                    guest_cart.delete()
+                    
+                except Cart.DoesNotExist:
+                    pass
+            
+            messages.success(request, f'Welcome back, {username}!')
+            
+            # Redirect to next page if exists
+            next_url = request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
+            return redirect('index')
         else:
-            messages.error(request, 'Invalid username or password.')
-    else:
-        form = LoginForm()
+            messages.error(request, 'Invalid username or password!')
     
-    return render(request, 'store/auth/login.html', {'form': form, 'title': 'Login'})
+    return render(request, 'store/login.html')
 
 def logout_view(request):
+    """User logout"""
     logout(request)
-    messages.success(request, 'You have been logged out successfully.')
+    messages.success(request, 'You have been logged out!')
     return redirect('index')
 
 @login_required
-def dashboard_view(request):
-    user = request.user
-    orders = Order.objects.filter(user=user).order_by('-created_at')[:5]
-    profile = user.profile
-    
-    context = {
-        'user': user,
-        'profile': profile,
-        'orders': orders,
-        'orders_count': Order.objects.filter(user=user).count(),
-        'total_spent': sum(order.final_amount for order in Order.objects.filter(user=user))
-    }
-    return render(request, 'store/user/dashboard.html', context)
+def profile(request):
+    """User profile page"""
+    return render(request, 'store/profile.html')
 
 @login_required
-def profile_view(request):
+def profile(request):
+    """User profile page"""
     if request.method == 'POST':
-        form = UserProfileForm(request.POST, request.FILES, instance=request.user)
-        if form.is_valid():
-            form.save()
-            
-            # Update profile fields
-            profile = request.user.profile
-            profile.phone = request.POST.get('phone', '')
-            profile.address = request.POST.get('address', '')
-            profile.city = request.POST.get('city', '')
-            profile.state = request.POST.get('state', '')
-            profile.zip_code = request.POST.get('zip_code', '')
-            profile.country = request.POST.get('country', '')
-            profile.newsletter_subscribed = request.POST.get('newsletter', False) == 'on'
-            
-            if 'profile_picture' in request.FILES:
-                profile.profile_picture = request.FILES['profile_picture']
-            
-            profile.save()
-            
-            messages.success(request, 'Your profile has been updated successfully.')
-            return redirect('profile')
-    else:
-        form = UserProfileForm(instance=request.user)
+        # Update user info
+        user = request.user
+        user.email = request.POST.get('email', user.email)
+        user.first_name = request.POST.get('first_name', user.first_name)
+        user.last_name = request.POST.get('last_name', user.last_name)
+        user.save()
+        
+        messages.success(request, 'Profile updated successfully!')
+        return redirect('profile')
     
-    context = {
-        'form': form,
-        'profile': request.user.profile
-    }
-    return render(request, 'store/user/profile.html', context)
-
-@login_required
-def order_history_view(request):
-    orders = Order.objects.filter(user=request.user).order_by('-created_at')
-    context = {'orders': orders}
-    return render(request, 'store/user/orders.html', context)
-
-@login_required
-def order_detail_view(request, order_id):
-    order = get_object_or_404(Order, id=order_id, user=request.user)
-    context = {'order': order}
-    return render(request, 'store/user/order_detail.html', context)
+    return render(request, 'store/profile.html')

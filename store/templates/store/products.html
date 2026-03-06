@@ -1,0 +1,93 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Products - Anime Merch Store{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h2 class="text-center text-white mb-5">Our Products</h2>
+    
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+        <div class="col-md-8 mx-auto">
+            <form method="get" class="row g-3">
+                <div class="col-md-5">
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        <option value="figures" {% if current_category == 'figures' %}selected{% endif %}>Action Figures</option>
+                        <option value="clothing" {% if current_category == 'clothing' %}selected{% endif %}>Clothing</option>
+                        <option value="posters" {% if current_category == 'posters' %}selected{% endif %}>Posters</option>
+                        <option value="accessories" {% if current_category == 'accessories' %}selected{% endif %}>Accessories</option>
+                        <option value="manga" {% if current_category == 'manga' %}selected{% endif %}>Manga Books</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select name="sort" class="form-select">
+                        <option value="name" {% if current_sort == 'name' %}selected{% endif %}>Sort by: Name</option>
+                        <option value="price_low" {% if current_sort == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                        <option value="price_high" {% if current_sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                        <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>Newest First</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Apply Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Products Grid -->
+    <div class="row g-4">
+        {% for product in products %}
+            <div class="col-md-3">
+                <div class="card h-100 shadow-lg border-0">
+                    {% if product.featured %}
+                        <span class="badge bg-warning position-absolute top-0 start-0 m-2">Featured</span>
+                    {% endif %}
+                    
+                    <a href="{% url 'product_detail' product.id %}">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-image fa-3x"></i>
+                            </div>
+                        {% endif %}
+                    </a>
+                    
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <a href="{% url 'product_detail' product.id %}" class="text-decoration-none text-dark">
+                                {{ product.name|truncatechars:30 }}
+                            </a>
+                        </h5>
+                        <p class="card-text text-muted small">{{ product.description|truncatechars:50 }}</p>
+                        <p class="text-muted small mb-2">
+                            <i class="fas fa-tag me-1"></i>{{ product.get_category_display }}
+                            <br>
+                            <i class="fas fa-box me-1"></i>Stock: {{ product.stock }}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="h5 text-primary">₹{{ product.price }}</span>
+                            {% if product.stock > 0 %}
+                                <a href="{% url 'add_to_cart' product.id %}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-cart-plus"></i>
+                                </a>
+                            {% else %}
+                                <span class="badge bg-danger">Out of Stock</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 text-center">
+                <div class="alert alert-info">
+                    No products found. <a href="{% url 'products' %}">Clear filters</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

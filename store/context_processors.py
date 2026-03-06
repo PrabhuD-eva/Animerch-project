@@ -1,7 +1,6 @@
-from .models import Category, Anime
+from .models import Category
 
 def categories_processor(request):
     return {'categories': Category.objects.all()}
 
-def anime_list_processor(request):
-    return {'anime_list': Anime.objects.all()}
+# Remove the anime_list_processor since we don't have Anime model anymore

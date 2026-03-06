@@ -1,0 +1,44 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Order Confirmation - Anime Merch Store{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0 text-center">
+                <div class="card-body p-5">
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+                    </div>
+                    
+                    <h2 class="mb-3">Order Confirmed!</h2>
+                    <p class="lead mb-4">Thank you for your purchase. Your order has been placed successfully.</p>
+                    
+                    <div class="bg-light p-4 rounded mb-4">
+                        <h5>Order Details</h5>
+                        <p class="mb-1"><strong>Order #:</strong> {{ order.id }}</p>
+                        <p class="mb-1"><strong>Date:</strong> {{ order.created_at|date:"F d, Y" }}</p>
+                        <p class="mb-1"><strong>Total Amount:</strong> ₹{{ order.total_amount }}</p>
+                        <p class="mb-0"><strong>Status:</strong> 
+                            <span class="badge bg-warning">Pending</span>
+                        </p>
+                    </div>
+                    
+                    <p class="mb-4">We've sent a confirmation email to <strong>{{ order.email }}</strong></p>
+                    
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{% url 'orders' %}" class="btn btn-primary">
+                            <i class="fas fa-history me-2"></i>View My Orders
+                        </a>
+                        <a href="{% url 'products' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-store me-2"></i>Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Register - Anime Merch Store{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>Register</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" name="username" class="form-control" required>
+                            <small class="text-muted">Required. 150 characters or fewer.</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required>
+                            <small class="text-muted">At least 8 characters.</small>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Confirm Password</label>
+                            <input type="password" name="confirm_password" class="form-control" required>
+                        </div>
+                        
+                        {% if request.GET.next %}
+                            <input type="hidden" name="next" value="{{ request.GET.next }}">
+                        {% endif %}
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-user-plus me-2"></i>Register
+                        </button>
+                        
+                        <div class="text-center mt-3">
+                            <p class="mb-0">Already have an account? 
+                                <a href="{% url 'login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}">Login here</a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

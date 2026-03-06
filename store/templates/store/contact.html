@@ -1,0 +1,188 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block title %}Contact Us - Anime Merch Store{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-primary text-white py-5">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold mb-4">Contact Us</h1>
+        <p class="lead">We'd love to hear from you! Get in touch with any questions or concerns.</p>
+    </div>
+</section>
+
+<div class="container my-5">
+    <div class="row">
+        <!-- Contact Form -->
+        <div class="col-md-7">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="mb-0"><i class="fas fa-paper-plane me-2"></i>Send us a Message</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Your Name</label>
+                                <input type="text" name="name" class="form-control form-control-lg" placeholder="Enter your full name" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Email Address</label>
+                                <input type="email" name="email" class="form-control form-control-lg" placeholder="Enter your email" required>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Message</label>
+                                <textarea name="message" class="form-control form-control-lg" rows="6" placeholder="Write your message here..." required></textarea>
+                            </div>
+                            
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-paper-plane me-2"></i>Send Message
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact Information -->
+        <div class="col-md-5">
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>Contact Information</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                            <i class="fas fa-map-marker-alt fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Address</h6>
+                            <p class="mb-0 text-muted">123 Anime Street, Andheri East, Mumbai - 400093, Maharashtra, India</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                            <i class="fas fa-phone-alt fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Phone</h6>
+                            <p class="mb-0 text-muted">+91 98765 43210</p>
+                            <p class="mb-0 text-muted">+91 98765 43211 (WhatsApp)</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                            <i class="fas fa-envelope fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Email</h6>
+                            <p class="mb-0 text-muted">support@animemerch.com</p>
+                            <p class="mb-0 text-muted">sales@animemerch.com</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                            <i class="fas fa-clock fa-lg"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">Business Hours</h6>
+                            <p class="mb-0 text-muted">Monday - Saturday: 10:00 AM - 8:00 PM</p>
+                            <p class="mb-0 text-muted">Sunday: Closed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Social Media -->
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="mb-0"><i class="fas fa-share-alt me-2"></i>Follow Us</h4>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted mb-3">Stay connected with us on social media for the latest updates and offers!</p>
+                    <div class="d-flex justify-content-around">
+                        <a href="#" class="text-primary" style="font-size: 2.5rem;">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        <a href="#" class="text-info" style="font-size: 2.5rem;">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-danger" style="font-size: 2.5rem;">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="text-primary" style="font-size: 2.5rem;">
+                            <i class="fab fa-discord"></i>
+                        </a>
+                        <a href="#" class="text-danger" style="font-size: 2.5rem;">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Map (Optional) -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="mb-0"><i class="fas fa-map-marked-alt me-2"></i>Find Us</h4>
+                </div>
+                <div class="card-body p-0">
+                    <div style="height: 400px; background: #f0f0f0; border-radius: 0 0 15px 15px; display: flex; align-items: center; justify-content: center;">
+                        <div class="text-center">
+                            <i class="fas fa-map-marker-alt fa-4x text-primary mb-3"></i>
+                            <h5>AnimeMerch Store</h5>
+                            <p class="text-muted">123 Anime Street, Andheri East, Mumbai - 400093</p>
+                            <p class="text-muted"><i class="fas fa-clock me-2"></i>Open Mon-Sat: 10AM - 8PM</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal (if message sent) -->
+{% if messages %}
+    {% for message in messages %}
+        {% if 'success' in message.tags %}
+        <div class="modal fade" id="successModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title"><i class="fas fa-check-circle me-2"></i>Success!</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <i class="fas fa-check-circle text-success fa-4x mb-3"></i>
+                        <p class="lead">{{ message }}</p>
+                        <p>We'll get back to you within 24 hours.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            window.onload = function() {
+                var myModal = new bootstrap.Modal(document.getElementById('successModal'));
+                myModal.show();
+            }
+        </script>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+{% endblock %}

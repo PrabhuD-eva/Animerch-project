@@ -2,26 +2,28 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Public pages
     path('', views.index, name='index'),
-    path('products/', views.product_list, name='product_list'),
-    path('product/<slug:slug>/', views.product_detail, name='product_detail'),
-    path('cart/', views.cart_detail, name='cart_detail'),
-    path('cart/add/', views.add_to_cart, name='add_to_cart'),
-    path('cart/update/', views.update_cart_item, name='update_cart_item'),
-    path('cart/remove/', views.remove_from_cart, name='remove_from_cart'),
-    path('cart/count/', views.cart_count, name='cart_count'),
-    path('checkout/', views.checkout, name='checkout'),
-    path('order/<int:order_id>/', views.order_confirmation, name='order_confirmation'),
-    path('search/suggestions/', views.search_suggestions, name='search_suggestions'),
+    path('products/', views.product_list, name='products'),
+    path('product/<int:id>/', views.product_detail, name='product_detail'),
+    path('about/', views.about, name='about'),
+    path('contact/', views.contact, name='contact'),
     
-    # Authentication URLs
-    path('register/', views.register_view, name='register'),
+    # Cart operations
+    path('cart/', views.cart_view, name='cart'),
+    path('cart/add/<int:product_id>/', views.add_to_cart, name='add_to_cart'),
+    path('cart/update/<int:item_id>/', views.update_cart, name='update_cart'),
+    path('cart/remove/<int:item_id>/', views.remove_from_cart, name='remove_from_cart'),
+    path('cart/count/', views.cart_count, name='cart_count'),
+    
+    # Checkout & Orders
+    path('checkout/', views.checkout, name='checkout'),
+    path('order/<int:order_id>/confirmation/', views.order_confirmation, name='order_confirmation'),
+    path('orders/', views.order_history, name='orders'),
+    
+    # Authentication
+    path('register/', views.register, name='register'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
-    
-    # User Dashboard URLs
-    path('dashboard/', views.dashboard_view, name='dashboard'),
-    path('profile/', views.profile_view, name='profile'),
-    path('orders/', views.order_history_view, name='orders'),
-    path('order/<int:order_id>/detail/', views.order_detail_view, name='order_detail'),
+    path('profile/', views.profile, name='profile'),
 ]

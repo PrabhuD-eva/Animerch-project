@@ -64,7 +64,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'store.context_processors.categories_processor',  # Add this
-                'store.context_processors.anime_list_processor',  # Add this
+                
             ],
         },
     },
